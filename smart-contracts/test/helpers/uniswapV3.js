@@ -456,7 +456,7 @@ const getUniswapTokens = (chainId = 1) => ({
 })
 
 async function getUDTSwapRoute({
-  tokenInAddress,
+  tokenIn,
   recipient,
   amountIn,
   slippageTolerance = new Percent(10, 100),
@@ -464,12 +464,6 @@ async function getUDTSwapRoute({
   permitOptions: { usePermit2Sig = false, inputTokenPermit } = {},
   chainId = CHAIN_ID,
 }) {
-  const tokenContract = await ethers.getContractAt(
-    'IMintableERC20',
-    tokenInAddress
-  )
-  const decimals = await tokenContract.decimals()
-  const tokenIn = new Token(chainId, tokenInAddress, decimals)
   const tokenOut = new Token(chainId, UDT, 18, 'UDT')
 
   // init router
