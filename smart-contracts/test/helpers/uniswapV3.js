@@ -16,6 +16,7 @@ const {
 const JSBI = require('jsbi')
 const { PERMIT2_ADDRESS } = require('@uniswap/universal-router-sdk')
 const { AllowanceTransfer } = require('@uniswap/permit2-sdk')
+const uniswapRouterAddresses = require('../../scripts/uniswap/routerAddresses.json')
 
 const { abi: WethABI } = require('./ABIs/weth.json')
 const { addUDT, impersonate, addSomeETH } = require('./fork')
@@ -455,6 +456,12 @@ const getUniswapTokens = (chainId = 1) => ({
   wBtc: new Token(chainId, WBTC, 18, 'wBTC'),
 })
 
+const getUniswapRouters = (chainId = CHAIN_ID) => {
+  const { UniversalRouter, UniversalRouterV1_2, SwapRouter02 } =
+    uniswapRouterAddresses[chainId]
+  return [UniversalRouter, SwapRouter02, UniversalRouterV1_2].filter((d) => !!d)
+}
+
 async function getUDTSwapRoute({
   tokenIn,
   recipient,
@@ -521,6 +528,7 @@ module.exports = {
   getUniswapRoute,
   getUDTSwapRoute,
   getUniswapTokens,
+  getUniswapRouters,
   PERMIT2_ADDRESS,
   MAX_UINT160,
   makePermit,

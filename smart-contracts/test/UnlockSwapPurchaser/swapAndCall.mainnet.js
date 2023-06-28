@@ -3,6 +3,7 @@ const { expect } = require('chai')
 const {
   getUniswapTokens,
   getUniswapRoute,
+  getUniswapRouters,
   ADDRESS_ZERO,
   deployLock,
   purchaseKey,
@@ -13,8 +14,6 @@ const {
   CHAIN_ID,
   reverts,
 } = require('../helpers')
-
-const uniswapRouterAddresses = require('../../scripts/uniswap/routerAddresses.json')
 
 // get uniswap-formatted tokens
 const tokens = getUniswapTokens(CHAIN_ID)
@@ -36,8 +35,7 @@ describe(`swapAndCall`, function () {
       this.skip()
     }
 
-    const { UniversalRouter, SwapRouter02 } = uniswapRouterAddresses[CHAIN_ID]
-    const routers = [UniversalRouter, SwapRouter02]
+    const routers = getUniswapRouters()
 
     // get Unlock contract
     unlock = await ethers.getContractAt('Unlock', UNLOCK_ADDRESS)

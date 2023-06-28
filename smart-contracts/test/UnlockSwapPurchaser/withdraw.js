@@ -5,7 +5,7 @@ const {
   ADDRESS_ZERO,
   PERMIT2_ADDRESS,
   deployContracts,
-  CHAIN_ID,
+  getUniswapRouters,
 } = require('../helpers')
 
 const someTokens = ethers.utils.parseUnits('10', 'ether')
@@ -19,7 +19,6 @@ let swapper,
   owner,
   unlockBalanceBefore,
   swapperBalanceBefore
-const uniswapRouterAddresses = require('../../scripts/uniswap/routerAddresses.json')
 const { assert } = require('chai')
 
 contract('UnlockSwapPurchaser / withdraw', () => {
@@ -32,9 +31,8 @@ contract('UnlockSwapPurchaser / withdraw', () => {
         const UnlockSwapPurchaser = await ethers.getContractFactory(
           'UnlockSwapPurchaser'
         )
-        const { UniversalRouter, SwapRouter02 } =
-          uniswapRouterAddresses[CHAIN_ID]
-        const routers = [UniversalRouter, SwapRouter02]
+
+        const routers = getUniswapRouters()
         swapper = await UnlockSwapPurchaser.deploy(
           unlock.address,
           PERMIT2_ADDRESS,
