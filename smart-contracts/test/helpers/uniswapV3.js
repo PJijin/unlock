@@ -455,6 +455,68 @@ const getUniswapTokens = (chainId = 1) => ({
   wBtc: new Token(chainId, WBTC, 18, 'wBTC'),
 })
 
+async function getUDTSwapRoute({
+  tokenInAddress,
+  recipient,
+  amountIn,
+  slippageTolerance = new Percent(10, 100),
+  deadline = Math.floor(new Date().getTime() / 1000 + 100000),
+  permitOptions: { usePermit2Sig = false, inputTokenPermit } = {},
+  chainId = CHAIN_ID,
+}) {
+  const tokenContract = await ethers.getContractAt(
+    'IMintableERC20',
+    tokenInAddress
+  )
+  const decimals = await tokenContract.decimals()
+  const tokenIn = new Token(chainId, tokenInAddress, decimals)
+  const tokenOut = new Token(chainId, UDT, 18, 'UDT')
+
+  // init router
+  const router = new AlphaRouter({
+    chainId,
+    provider: ethers.provider,
+  })
+
+  // parse router args
+  const inputAmount = CurrencyAmount.fromRawAmount(
+    tokenIn,
+    JSBI.BigInt(amountIn)
+  )
+  const routeArgs = [
+    inputAmount,
+    tokenOut,
+    TradeType.EXACT_INPUT,
+    {
+      type: SwapType.UNIVERSAL_ROUTER,
+      recipient,
+      slippageTolerance,
+      deadline,
+    },
+  ]
+
+  // add sig if necessary
+  if (usePermit2Sig) routeArgs.inputTokenPermit = inputTokenPermit
+
+  // call router
+  const { methodParameters, quote, quoteGasAdjusted, estimatedGasUsedUSD } =
+    await router.route(...routeArgs)
+
+  // log some prices
+  console.log(`Quote Exact: ${quote.toExact()}`)
+  console.log(`Quote toFixed: ${quote.toFixed(2)}`)
+  console.log(`Gas Adjusted Quote: ${quoteGasAdjusted.toFixed(2)}`)
+  console.log(`Gas Used USD: ${estimatedGasUsedUSD.toFixed(6)}`)
+
+  const { calldata: swapCalldata, value, to: swapRouter } = methodParameters
+
+  return {
+    swapCalldata,
+    value,
+    swapRouter,
+  }
+}
+
 module.exports = {
   addLiquidity,
   createUniswapV3Pool: createPool,
@@ -463,6 +525,7 @@ module.exports = {
   getPoolState,
   getPoolImmutables,
   getUniswapRoute,
+  getUDTSwapRoute,
   getUniswapTokens,
   PERMIT2_ADDRESS,
   MAX_UINT160,
