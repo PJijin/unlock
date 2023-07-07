@@ -7,6 +7,7 @@ const {
   TradeType,
   Percent,
 } = require('@uniswap/sdk-core')
+const { encodeRouteToPath } = require('@uniswap/v3-sdk')
 const {
   AlphaRouter,
   SwapType,
@@ -462,12 +463,9 @@ const getUniswapRouters = (chainId = CHAIN_ID) => {
   return [UniversalRouter, SwapRouter02, UniversalRouterV1_2].filter((d) => !!d)
 }
 
-async function getUDTSwapRoute({
+async function getUDTSwapPath({
   tokenIn,
-  recipient,
   amountIn,
-  slippageTolerance = new Percent(10, 100),
-  deadline = Math.floor(new Date().getTime() / 1000 + 100000),
   permitOptions: { usePermit2Sig = false, inputTokenPermit } = {},
   chainId = CHAIN_ID,
 }) {
@@ -484,24 +482,20 @@ async function getUDTSwapRoute({
     tokenIn,
     JSBI.BigInt(amountIn)
   )
-  const routeArgs = [
-    inputAmount,
-    tokenOut,
-    TradeType.EXACT_INPUT,
-    {
-      type: SwapType.UNIVERSAL_ROUTER,
-      recipient,
-      slippageTolerance,
-      deadline,
-    },
-  ]
+  const routeArgs = [inputAmount, tokenOut, TradeType.EXACT_INPUT]
 
   // add sig if necessary
   if (usePermit2Sig) routeArgs.inputTokenPermit = inputTokenPermit
 
   // call router
-  const { methodParameters, quote, quoteGasAdjusted, estimatedGasUsedUSD } =
-    await router.route(...routeArgs)
+  const {
+    methodParameters,
+    quote,
+    quoteGasAdjusted,
+    estimatedGasUsedUSD,
+    trade,
+  } = await router.route(...routeArgs)
+  const path = encodeRouteToPath(trade.routes[0])
 
   // log some prices
   console.log(`Quote Exact: ${quote.toExact()}`)
@@ -509,10 +503,10 @@ async function getUDTSwapRoute({
   console.log(`Gas Adjusted Quote: ${quoteGasAdjusted.toFixed(2)}`)
   console.log(`Gas Used USD: ${estimatedGasUsedUSD.toFixed(6)}`)
 
-  const { calldata: swapCalldata, value, to: swapRouter } = methodParameters
+  const { value, to: swapRouter } = methodParameters
 
   return {
-    swapCalldata,
+    path,
     value,
     swapRouter,
   }
@@ -526,7 +520,7 @@ module.exports = {
   getPoolState,
   getPoolImmutables,
   getUniswapRoute,
-  getUDTSwapRoute,
+  getUDTSwapPath,
   getUniswapTokens,
   getUniswapRouters,
   PERMIT2_ADDRESS,
